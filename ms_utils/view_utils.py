@@ -2,7 +2,6 @@
 View Utils
 """
 from flask_marshmallow import Marshmallow
-from flask_sqlalchemy import SQLAlchemy
 
 from ms_utils import prepare_json_response, PaginationSchema
 from flask import current_app, request
@@ -36,7 +35,7 @@ class ViewGeneralMethods:
         data = generic_get_serialize_data(
             PaginationSchema(self.ma, current_app, schema(many=True)).pagination_sub_class, query)
 
-        return prepare_json_response(f'{model.__name__} get successfully', True, data)
+        return prepare_json_response(f'{model.__name__} get successfully', data=data)
 
     def generic_update_or_create(self, model, validation_class, object_id=None):
         """
@@ -62,7 +61,7 @@ class ViewGeneralMethods:
         except ValueError:
             self.db.session.rollback()
             return prepare_json_response(f'{model.__name__} can not be {action_text} successfully', False, code=400)
-        return prepare_json_response(f'{model.__name__} {action_text} successfully', True)
+        return prepare_json_response(f'{model.__name__} {action_text} successfully')
 
     def generic_create(self, model, data):
         """
@@ -93,8 +92,8 @@ class ViewGeneralMethods:
         :return:
         """
         model_object = self.db.get_or_404(model, object_id)
-        return prepare_json_response(f'{model.__name__} get successfully', True,
-                                     generic_get_serialize_data(schema, model_object))
+        return prepare_json_response(f'{model.__name__} get successfully',
+                                     data=generic_get_serialize_data(schema, model_object))
 
     def generic_delete(self, model, object_id):
         """
@@ -105,4 +104,4 @@ class ViewGeneralMethods:
         """
         model_object = self.db.get_or_404(model, object_id)
         model_object.delete()
-        return prepare_json_response(f'{model.__name__} deleted successfully!', True)
+        return prepare_json_response(f'{model.__name__} deleted successfully!')
