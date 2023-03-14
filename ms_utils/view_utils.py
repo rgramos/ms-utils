@@ -4,7 +4,7 @@ View Utils
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 
-from dmp_utils import prepare_json_response, PaginationSchema
+from ms_utils import prepare_json_response, PaginationSchema
 from flask import current_app, request
 
 from .model_utils import generic_get_serialize_data
@@ -16,7 +16,7 @@ class ViewGeneralMethods:
     View generic Methods
     """
     ma = Marshmallow()
-    db = SQLAlchemy()
+    db = None
 
     def __int__(self, ma, app, db):
         self.db = db

@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='dmp_general_utils',
+    name='ms_general_utils',
     packages=find_packages(),
     include_package_data=True,
-    version='0.0.20',
+    version='0.0.4',
     description='General functions for the implementation of microservices.',
     authors=[
         {"name": "Alejandro A. Serrano Correa", "email": "alejandroasc93@gmail.com"},
