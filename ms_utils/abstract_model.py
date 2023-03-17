@@ -6,7 +6,7 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime
 
 
-class BaseModal:
+class BaseModel:
     """
     Datetime created_at and updated_at
     """

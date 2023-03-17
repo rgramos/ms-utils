@@ -37,6 +37,7 @@ class TimestampField(TypeDecorator, ABC):
     Enables JSON storage by encoding and decoding on the fly.
     """
     impl = Integer
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         """
