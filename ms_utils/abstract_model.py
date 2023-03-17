@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer
+from datetime import datetime
 
-from .func_date import get_timestamp_now
+from sqlalchemy import Column, DateTime
 
 
 class BaseModal:
-    created_at = Column(Integer, server_default=str(get_timestamp_now()))
-    updated_at = Column(Integer, server_default=str(get_timestamp_now()))
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())

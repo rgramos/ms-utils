@@ -4,7 +4,7 @@ setup(
     name='ms_general_utils',
     packages=find_packages(),
     include_package_data=True,
-    version='0.0.5',
+    version='0.0.17',
     description='General functions for the implementation of microservices.',
     authors=[
         {"name": "Alejandro A. Serrano Correa", "email": "alejandroasc93@gmail.com"},
