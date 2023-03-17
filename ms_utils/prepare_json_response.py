@@ -1,3 +1,6 @@
+"""
+Prepare JSON Response Data
+"""
 from flask import jsonify
 
 
