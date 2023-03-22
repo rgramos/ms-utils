@@ -105,3 +105,16 @@ class ViewGeneralMethods:
         model_object = self.db.get_or_404(model, object_id)
         model_object.delete()
         return prepare_json_response(f'{model.__name__} deleted successfully!')
+
+    def generic_change_boolean(self, model, object_id, field):
+        """
+        Generic change boolean method
+        :param model:
+        :param object_id:
+        :param field:
+        :return:
+        """
+        model_object = self.db.get_or_404(model, object_id)
+        model_object[field] = not model_object[field]
+        self.db.session.commit()
+
