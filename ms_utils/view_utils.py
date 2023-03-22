@@ -117,4 +117,3 @@ class ViewGeneralMethods:
         model_object = self.db.get_or_404(model, object_id)
         model_object[field] = not model_object[field]
         self.db.session.commit()
-
