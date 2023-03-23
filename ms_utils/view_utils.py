@@ -30,7 +30,9 @@ class ViewGeneralMethods:
         page = int(request.args.get('page')) if request.args.get('page') else 1
         per_page = int(request.args.get('per_page')) if request.args.get('per_page') else 10
 
-        query = model.query.paginate(page=page, per_page=per_page)
+        query = model.query.filter(model.name.contains(request.args.get('q'))) \
+            .paginate(page=page, per_page=per_page) if request.args.get(
+            'q') else model.query.paginate(page=page, per_page=per_page)
         query.items = generic_get_serialize_data(schema(many=True), query.items)
         data = generic_get_serialize_data(
             PaginationSchema(self.ma, current_app, schema(many=True)).pagination_sub_class, query)
