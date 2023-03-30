@@ -9,3 +9,4 @@ from .validation_utils import validate_generic_form
 from .abstract_model import BaseModel
 from .model_utils import JsonEncodeDict, generic_get_serialize_data, TimestampField
 from .view_utils import ViewGeneralMethods
+from .generic_crud_class import register_api, GenericItemCrud, GenericGroupCrud

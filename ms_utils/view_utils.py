@@ -83,7 +83,7 @@ class ViewGeneralMethods:
         :param model_object:
         :return:
         """
-        model_object.query.filter_by(id=model_object.id).update(data)
+        model_object.update_from_json(data)
 
     def generic_details(self, model, schema, object_id):
         """
