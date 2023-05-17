@@ -105,6 +105,7 @@ class ViewGeneralMethods:
         :return:
         """
         model.query.filter_by(id=object_id).delete()
+        self.db.session.commit()
         return prepare_json_response(f'{model.__name__} deleted successfully!')
 
     def generic_change_boolean(self, model, object_id, field):
