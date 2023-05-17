@@ -22,7 +22,7 @@ class ViewGeneralMethods:
         self.ma = ma
         self.ma.init_app(app)
 
-    def generic_list(self, model, schema):
+    def generic_list(self, model, schema, **kwargs):
         """
         Generic list
         :return: jsonify
@@ -30,7 +30,7 @@ class ViewGeneralMethods:
         page = int(request.args.get('page')) if request.args.get('page') else 1
         per_page = int(request.args.get('per_page')) if request.args.get('per_page') else 10
 
-        query = model.query.filter(model.name.contains(request.args.get('q'))) \
+        query = model.query.filter_by(**kwargs) \
             .paginate(page=page, per_page=per_page) if request.args.get(
             'q') else model.query.paginate(page=page, per_page=per_page)
         query.items = generic_get_serialize_data(schema(many=True), query.items)
@@ -57,7 +57,7 @@ class ViewGeneralMethods:
                 self.generic_create(model, data)
             else:
                 action_text = 'updated'
-                model_object = self.db.get_or_404(model, object_id)
+                model_object = model.query.get_or_404(object_id)
                 self.generic_update(model_object, data)
             self.db.session.commit()
         except ValueError:
@@ -83,7 +83,7 @@ class ViewGeneralMethods:
         :param model_object:
         :return:
         """
-        model_object.update_from_json(data)
+        model_object.query.filter_by(id=model_object.id).update(data)
 
     def generic_details(self, model, schema, object_id):
         """
@@ -95,7 +95,7 @@ class ViewGeneralMethods:
         """
         model_object = self.db.get_or_404(model, object_id)
         return prepare_json_response(f'{model.__name__} get successfully',
-                                     data=generic_get_serialize_data(schema, model_object))
+                                     data=generic_get_serialize_data(schema(), model_object))
 
     def generic_delete(self, model, object_id):
         """
@@ -117,5 +117,7 @@ class ViewGeneralMethods:
         :return:
         """
         model_object = self.db.get_or_404(model, object_id)
-        model_object[field] = not model_object[field]
+        model.query.filter_by(id=object_id).update({field: not getattr(model_object, field)})
         self.db.session.commit()
+        return prepare_json_response(
+            f'{model.__name__} field {field} updated to {getattr(model_object, field)} successfully!')

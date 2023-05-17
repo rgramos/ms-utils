@@ -95,5 +95,5 @@ def register_api(app, db, model, name, schema, post_validator, path_validator):
     """
     item = GenericItemCrud.as_view(f"{name}-item", db, model, path_validator, schema)
     group = GenericGroupCrud.as_view(f"{name}-group", db, model, post_validator, schema)
-    app.add_url_rule(f"/{name}/<int:id>", view_func=item)
+    app.add_url_rule(f"/{name}/<int:object_id>", view_func=item)
     app.add_url_rule(f"/{name}/", view_func=group)

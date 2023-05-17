@@ -12,7 +12,7 @@ def validate_generic_form(validation_class):
     :param validation_class: Validation class
     :return: jsonfy | None
     """
-    errors = validation_class.validate(request.json)
+    errors = validation_class().validate(request.json)
     if errors:
         return prepare_json_response('Validation Error', False, {'errors': errors}, 422)
     return None
