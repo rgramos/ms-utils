@@ -104,8 +104,7 @@ class ViewGeneralMethods:
         :param object_id:
         :return:
         """
-        model_object = self.db.get_or_404(model, object_id)
-        model_object.delete()
+        model.query.filter_by(id=object_id).delete()
         return prepare_json_response(f'{model.__name__} deleted successfully!')
 
     def generic_change_boolean(self, model, object_id, field):
