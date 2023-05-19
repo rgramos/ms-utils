@@ -2,6 +2,7 @@
 Validation utils
 """
 from flask import request
+from marshmallow import Schema, EXCLUDE
 
 from .prepare_json_response import prepare_json_response
 
@@ -16,3 +17,11 @@ def validate_generic_form(validation_class):
     if errors:
         return prepare_json_response('Validation Error', False, {'errors': errors}, 422)
     return None
+
+
+class BaseSchema(Schema):
+    class Meta:
+        """
+        Meta
+        """
+        unknown = EXCLUDE

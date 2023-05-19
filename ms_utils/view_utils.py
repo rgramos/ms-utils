@@ -83,7 +83,12 @@ class ViewGeneralMethods:
         :param model_object:
         :return:
         """
-        model_object.query.filter_by(id=model_object.id).update(data)
+        for key, value in data.items():
+            if hasattr(model_object, key):
+                attribute = getattr(model_object, key)
+                if not hasattr(attribute, '__tablename__'):
+                    # Si el atributo no es una relación
+                    setattr(model_object, key, value)
 
     def generic_details(self, model, schema, object_id):
         """
