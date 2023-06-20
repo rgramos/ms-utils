@@ -27,6 +27,10 @@ class ViewGeneralMethods:
         Generic list
         :return: jsonify
         """
+        if request.args.get('not_paginate'):
+            query = model.query.all()
+            data = generic_get_serialize_data(schema(many=True), query)
+            return prepare_json_response(f'{model.__name__} get successfully', data=data)
         page = int(request.args.get('page')) if request.args.get('page') else 1
         per_page = int(request.args.get('per_page')) if request.args.get('per_page') else 10
 
