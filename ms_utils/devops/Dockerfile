@@ -18,7 +18,11 @@ RUN python -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE $EXPORT_PORT
-#
-RUN ["chmod", "+x", "/usr/app/script.sh"]
 
-ENTRYPOINT  /usr/app/script.sh "$port"
+RUN ["chmod", "+x", "./script.sh"]
+
+RUN echo "/bin/bash /usr/app/script.sh $port" > /tmp.sh
+
+RUN ["chmod", "+x", "/tmp.sh"]
+
+ENTRYPOINT ["/bin/bash", "/tmp.sh"]

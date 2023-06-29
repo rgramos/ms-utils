@@ -8,7 +8,7 @@ setup(
     packages=find_packages(),
     package_data={'ms_utils': ['devops/*', 'devops/deploy/*']},
     include_package_data=True,
-    version='1.4.5',
+    version='1.4.6',
     description='General functions for the implementation of microservices.',
     authors=[
         {"name": "Alejandro A. Serrano Correa", "email": "alejandroasc93@gmail.com"},
