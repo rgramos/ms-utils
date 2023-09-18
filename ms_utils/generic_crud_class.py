@@ -1,99 +1,80 @@
 """
 Generic Views
 """
-from flask.views import MethodView
+from flask.views import MethodView, View
 from ms_utils import ViewGeneralMethods
 
 
-class GenericItemCrud(MethodView):
+class ApiView(MethodView, ViewGeneralMethods):
     """
-    Generic Crud Class
+    Api Class
     """
     init_every_request = False
-    db = None
-    model = None
-    validator = None
-    schema = None
+    post_validator = None
+    patch_validator = None
 
-    def __init__(self, db, model, validator, schema):
-        self.db = db
-        self.model = model
-        self.validator = validator
-        self.schema = schema
-        ViewGeneralMethods.db = db
+    def get_post_validator(self):
+        """
+        Get validator
+        """
+        if self.post_validator is None:
+            raise ValueError("'Validator' is not defined.")
+        return self.post_validator
 
+    def get_patch_validator(self):
+        """
+        Get validator
+        """
+        if self.patch_validator is None:
+            raise ValueError("'Validator' is not defined.")
+        return self.patch_validator
+
+
+class BasicApiView(View, ViewGeneralMethods):
+    init_every_request = False
+
+
+class GenericItemCrud(ApiView):
     def get(self, object_id):
-        """
-        Component Type details
-        :param object_id:
-        :return:
-        """
-        return ViewGeneralMethods().generic_details(self.model, self.schema, object_id)
+        return self.details(object_id)
 
     def patch(self, object_id):
-        """
-        Component Type update
-        :param object_id:
-        :return:
-        """
-        return ViewGeneralMethods().generic_update_or_create(self.model, self.validator, object_id)
+        return self.update_or_create(self.get_patch_validator(), object_id)
 
     def delete(self, object_id):
-        """
-        Component Type update
-        :param object_id:
-        :return:
-        """
-        return ViewGeneralMethods().generic_delete(self.model, object_id)
+        return super().delete(object_id)
 
 
-class GenericGroupCrud(MethodView):
-    """
-    Generic Crud Class
-    """
-    init_every_request = False
-    model = None
-    validator = None
-    schema = None
-
-    def __init__(self, db, model, validator, schema):
-        self.db = db
-        self.model = model
-        self.validator = validator
-        self.schema = schema
-        ViewGeneralMethods.db = db
-
-    vmg = ViewGeneralMethods()
-
-    # Component Type
+class GenericGroupCrud(ApiView):
     def get(self):
-        """
-        Component type list
-        :return: jsonify
-        """
-        return ViewGeneralMethods().generic_list(self.model, self.schema)
+        return self.list()
 
     def post(self):
-        """
-        Create component type
-        :return: jsonfy
-        """
-        return ViewGeneralMethods().generic_update_or_create(self.model, self.validator)
+        return self.update_or_create(self.get_post_validator())
 
 
-def register_api(app, db, model, name, schema, post_validator, path_validator):
-    """
-    Register API method
-    :param schema:
-    :param post_validator:
-    :param path_validator:
-    :param app:
-    :param db:
-    :param model:
-    :param name:
-    :return:
-    """
-    item = GenericItemCrud.as_view(f"{name}-item", db, model, path_validator, schema)
-    group = GenericGroupCrud.as_view(f"{name}-group", db, model, post_validator, schema)
-    app.add_url_rule(f"/{name}/<int:object_id>", view_func=item)
-    app.add_url_rule(f"/{name}/", view_func=group)
+class UrlsApi:
+    blueprint = None
+    url_name = 'generic-api'
+    item_crud_class = GenericItemCrud
+    group_crud_class = GenericGroupCrud
+
+    def __init__(self):
+        self.register_api()
+
+    def get_blueprint(self):
+        """
+        Get validator
+        """
+        if self.blueprint is None:
+            raise ValueError("'Blueprint' is not defined.")
+        return self.blueprint
+
+    def register_api(self):
+        item = self.item_crud_class.as_view(f"{self.url_name}-item")
+        self.add_url(f"/{self.url_name}/<int:object_id>", item)
+        group = self.group_crud_class.as_view(f"{self.url_name}-group")
+        self.add_url(f"/{self.url_name}/", group)
+
+    def add_url(self, url, view_func):
+        self.get_blueprint().add_url_rule(url, view_func=view_func)
