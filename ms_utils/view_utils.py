@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from ms_utils import prepare_json_response, PaginationSchema
 from flask import current_app, request
+from sqlalchemy import inspect
 
 from .model_utils import generic_get_serialize_data
 from .validation_utils import validate_generic_form
@@ -50,6 +51,14 @@ class ViewGeneralMethods:
             raise ValueError("'Model' is not defined.")
         return self.model.query
 
+    def get_filter(self, **kwargs):
+        queryset = self.get_queryset()
+        columns = inspect(self.model).column_attrs.keys()
+        for filter in kwargs.keys():
+            if filter in columns:
+                queryset = queryset.filter_by(**{filter: kwargs.get(filter)})
+        return queryset
+
     def get_item(self, pk):
         self.instance = self.get_queryset().get_or_404(pk)
         return self.instance
@@ -67,16 +76,13 @@ class ViewGeneralMethods:
         :param: kwargs
         :return: json
         """
-        # TODO:: Review the filter option and take it to a method
         page = int(request.args.get('page')) if request.args.get('page') else 1
         per_page = int(request.args.get('per_page')) if request.args.get('per_page') else 10
-        query = self.get_queryset()
-        if request.args.get('q'):
-            query = query.filter_by(**kwargs)
-        query = query.paginate(page=page, per_page=per_page)
-        query.items = generic_get_serialize_data(self.schema(many=True), query.items)
+        queryset = self.get_filter(**kwargs)
+        queryset = queryset.paginate(page=page, per_page=per_page)
+        queryset.items = generic_get_serialize_data(self.schema(many=True), queryset.items)
         return generic_get_serialize_data(
-            PaginationSchema(self.schema(many=True)).pagination_sub_class, query)
+            PaginationSchema(self.schema(many=True)).pagination_sub_class, queryset)
 
     def list(self, **kwargs):
         """
