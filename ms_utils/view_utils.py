@@ -2,9 +2,11 @@
 View Utils
 """
 from flask_marshmallow import Marshmallow
+from flask_sqlalchemy import SQLAlchemy
 
 from ms_utils import prepare_json_response, PaginationSchema
 from flask import current_app, request
+from sqlalchemy import inspect
 
 from .model_utils import generic_get_serialize_data
 from .validation_utils import validate_generic_form
@@ -14,40 +16,90 @@ class ViewGeneralMethods:
     """
     View generic Methods
     """
-    ma = Marshmallow()
+    ma = None
     db = None
+    model = None
+    schema = None
+    instance = None
 
-    def __int__(self, ma, app, db):
-        self.db = db
-        self.ma = ma
-        self.ma.init_app(app)
+    def get_db(self):
+        """
+        Get SQLAlchemy instance
+        """
+        if self.db is not None:
+            return self.db
+        if 'db' in current_app.config.keys() and isinstance(current_app.config.get('db'), SQLAlchemy):
+            return current_app.config.get('db')
+        raise ValueError("'SQLAlchemy' is not defined.")
 
-    def generic_list(self, model, schema, **kwargs):
+    def get_ma(self):
+        """
+        Get Marshmallow instance
+        """
+        if self.ma is not None:
+            return self.ma
+        if 'ma' in current_app.config.keys() and isinstance(current_app.config.get('ma'), Marshmallow):
+            self.ma = current_app.config.get('ma')
+            return current_app.config.get('ma')
+        raise ValueError("'Marshmallow' is not defined.")
+
+    def get_queryset(self):
+        """
+        Get query
+        """
+        if self.model is None:
+            raise ValueError("'Model' is not defined.")
+        return self.model.query
+
+    def get_filter(self, **kwargs):
+        queryset = self.get_queryset()
+        columns = inspect(self.model).column_attrs.keys()
+        for filter in kwargs.keys():
+            if filter in columns:
+                queryset = queryset.filter_by(**{filter: kwargs.get(filter)})
+        return queryset
+
+    def get_item(self, pk):
+        self.instance = self.get_queryset().get_or_404(pk)
+        return self.instance
+
+    def get_list_without_pagination(self):
+        """
+        List items without pagination
+        :return: json
+        """
+        return generic_get_serialize_data(self.schema(many=True), self.get_queryset().all())
+
+    def get_list_with_pagination(self, **kwargs):
+        """
+        List items with pagination
+        :param: kwargs
+        :return: json
+        """
+        page = int(request.args.get('page')) if request.args.get('page') else 1
+        per_page = int(request.args.get('per_page')) if request.args.get('per_page') else 10
+        queryset = self.get_filter(**kwargs)
+        queryset = queryset.paginate(page=page, per_page=per_page)
+        queryset.items = generic_get_serialize_data(self.schema(many=True), queryset.items)
+        return generic_get_serialize_data(
+            PaginationSchema(self.schema(many=True)).pagination_sub_class, queryset)
+
+    def list(self, **kwargs):
         """
         Generic list
         :return: jsonify
         """
         if request.args.get('not_paginate'):
-            query = model.query.all()
-            data = generic_get_serialize_data(schema(many=True), query)
-            return prepare_json_response(f'{model.__name__} get successfully', data=data)
-        page = int(request.args.get('page')) if request.args.get('page') else 1
-        per_page = int(request.args.get('per_page')) if request.args.get('per_page') else 10
+            data = self.get_list_without_pagination()
+        else:
+            data = self.get_list_with_pagination(**kwargs)
 
-        query = model.query.filter_by(**kwargs) \
-            .paginate(page=page, per_page=per_page) if request.args.get(
-            'q') else model.query.paginate(page=page, per_page=per_page)
-        query.items = generic_get_serialize_data(schema(many=True), query.items)
-        data = generic_get_serialize_data(
-            PaginationSchema(self.ma, current_app, schema(many=True)).pagination_sub_class, query)
+        return prepare_json_response(f'{self.model.__name__} get successfully', data=data)
 
-        return prepare_json_response(f'{model.__name__} get successfully', data=data)
-
-    def generic_update_or_create(self, model, validation_class, object_id=None):
+    def update_or_create(self, validation_class, object_id=None):
         """
         Generic method for create or update provider
         :param validation_class:
-        :param model:
         :param object_id:
         :return: jsonify
         """
@@ -58,75 +110,72 @@ class ViewGeneralMethods:
         try:
             data = request.json
             if object_id is None:
-                self.generic_create(model, data)
+                self.create(data)
             else:
                 action_text = 'updated'
-                model_object = model.query.get_or_404(object_id)
-                self.generic_update(model_object, data)
-            self.db.session.commit()
+                self.get_item(object_id)
+                self.update(data)
+            self.get_db().session.commit()
         except ValueError:
-            self.db.session.rollback()
-            return prepare_json_response(f'{model.__name__} can not be {action_text} successfully', False, code=400)
-        return prepare_json_response(f'{model.__name__} {action_text} successfully')
+            self.get_db().session.rollback()
+            return prepare_json_response(f'{self.model.__name__} can not be {action_text} successfully', False,
+                                         code=400)
+        return prepare_json_response(f'{self.model.__name__} {action_text} successfully')
 
-    def generic_create(self, model, data):
+    def create(self, data):
         """
         Generic Create method
-        :param model:
         :param data:
         :return:
         """
-        model_object = model(**data)
-        self.db.session.add(model_object)
+        if self.model is None:
+            raise ValueError("'Model' is not defined.")
+        self.instance = self.model(**data)
+        self.get_db().session.add(self.instance)
+        return self.instance
 
-    @staticmethod
-    def generic_update(model_object, data):
+    def update(self, data):
         """
         Generic Update method
         :param data:
-        :param model_object:
         :return:
         """
         for key, value in data.items():
-            if hasattr(model_object, key):
-                attribute = getattr(model_object, key)
+            if hasattr(self.instance, key):
+                attribute = getattr(self.instance, key)
                 if not hasattr(attribute, '__tablename__'):
-                    # Si el atributo no es una relación
-                    setattr(model_object, key, value)
+                    # If the attribute is not a relationship
+                    setattr(self.instance, key, value)
 
-    def generic_details(self, model, schema, object_id):
+    def details(self, object_id):
         """
         Generic details method
-        :param schema:
-        :param model:
         :param object_id:
         :return:
         """
-        model_object = self.db.get_or_404(model, object_id)
-        return prepare_json_response(f'{model.__name__} get successfully',
-                                     data=generic_get_serialize_data(schema(), model_object))
+        self.get_item(object_id)
+        return prepare_json_response(f'{self.model.__name__} get successfully',
+                                     data=generic_get_serialize_data(self.schema(), self.instance))
 
-    def generic_delete(self, model, object_id):
+    def delete(self, object_id):
         """
         Generic delete method
-        :param model:
         :param object_id:
         :return:
         """
-        model.query.filter_by(id=object_id).delete()
-        self.db.session.commit()
-        return prepare_json_response(f'{model.__name__} deleted successfully!')
+        self.get_queryset().filter_by(id=object_id).delete()
+        self.get_db().session.commit()
+        return prepare_json_response(f'{self.model.__name__} deleted successfully!')
 
-    def generic_change_boolean(self, model, object_id, field):
+    def generic_change_boolean(self, object_id, field):
         """
         Generic change boolean method
-        :param model:
         :param object_id:
         :param field:
         :return:
         """
-        model_object = self.db.get_or_404(model, object_id)
-        model.query.filter_by(id=object_id).update({field: not getattr(model_object, field)})
-        self.db.session.commit()
+        model_object = self.get_db().get_or_404(self.model, object_id)
+        self.model.query.filter_by(id=object_id).update({field: not getattr(model_object, field)})
+        self.get_db().session.commit()
         return prepare_json_response(
-            f'{model.__name__} field {field} updated to {getattr(model_object, field)} successfully!')
+            f'{self.model.__name__} field {field} updated to {getattr(model_object, field)} successfully!')

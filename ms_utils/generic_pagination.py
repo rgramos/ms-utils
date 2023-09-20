@@ -1,7 +1,7 @@
 """
 Pagination Generic Class
 """
-from flask_marshmallow import Marshmallow
+from flask_marshmallow.sqla import SQLAlchemyAutoSchema
 
 
 class PaginationSchema:
@@ -9,15 +9,12 @@ class PaginationSchema:
     Pagination Class
     """
     schema_object = None
-    ma = Marshmallow()
 
-    def __init__(self, ma, app, schema_object):
+    def __init__(self, schema_object):
         self.schema_object = schema_object
-        self.ma = ma
-        self.ma.init_app(app)
         self.pagination_sub_class = self.PaginationSchemaSubClass()
 
-    class PaginationSchemaSubClass(ma.SQLAlchemyAutoSchema):
+    class PaginationSchemaSubClass(SQLAlchemyAutoSchema):
         """
         Pagination Schema Data
         """
