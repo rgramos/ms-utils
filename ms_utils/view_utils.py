@@ -63,12 +63,13 @@ class ViewGeneralMethods:
         self.instance = self.get_queryset().get_or_404(pk)
         return self.instance
 
-    def get_list_without_pagination(self):
+    def get_list_without_pagination(self, **kwargs):
         """
         List items without pagination
         :return: json
         """
-        return generic_get_serialize_data(self.schema(many=True), self.get_queryset().all())
+        queryset = self.get_filter(**kwargs)
+        return generic_get_serialize_data(self.schema(many=True), queryset)
 
     def get_list_with_pagination(self, **kwargs):
         """
@@ -90,11 +91,16 @@ class ViewGeneralMethods:
         :return: jsonify
         """
         if request.args.get('not_paginate'):
-            data = self.get_list_without_pagination()
+            data = self.get_list_without_pagination(**{**kwargs, **request.args})
         else:
-            data = self.get_list_with_pagination(**kwargs)
+            data = self.get_list_with_pagination(**{**kwargs, **request.args})
 
         return prepare_json_response(f'{self.model.__name__} get successfully', data=data)
+
+    def prepare_data_form(self):
+        if request.is_json:
+            return request.json
+        return dict(request.form)
 
     def update_or_create(self, validation_class, object_id=None):
         """
@@ -103,12 +109,12 @@ class ViewGeneralMethods:
         :param object_id:
         :return: jsonify
         """
-        errors = validate_generic_form(validation_class)
+        data = self.prepare_data_form()
+        errors = validate_generic_form(validation_class, data)
         if errors is not None:
             return errors
         action_text = 'created'
         try:
-            data = request.json
             if object_id is None:
                 self.create(data)
             else:
