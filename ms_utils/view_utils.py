@@ -6,7 +6,7 @@ from datetime import datetime
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 
-from ms_utils import prepare_json_response, PaginationSchema
+from ms_utils import prepare_json_response, PaginationSchema, abort_bad_request
 from flask import current_app, request
 from sqlalchemy import inspect
 
@@ -125,8 +125,7 @@ class ViewGeneralMethods:
             self.get_db().session.commit()
         except ValueError:
             self.get_db().session.rollback()
-            return prepare_json_response(f'{self.model.__name__} can not be {action_text} successfully', False,
-                                         code=400)
+            abort_bad_request(f'{self.model.__name__} can not be {action_text} successfully')
         return prepare_json_response(f'{self.model.__name__} {action_text} successfully')
 
     def create(self, data):

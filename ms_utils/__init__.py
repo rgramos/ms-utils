@@ -13,3 +13,4 @@ from .abstract_model import BaseModel
 from .model_utils import JsonEncodeDict, generic_get_serialize_data, TimestampField
 from .view_utils import ViewGeneralMethods
 from .generic_crud_class import GenericItemCrud, GenericGroupCrud, BasicApiView, UrlsApi, ApiView, ViewGeneralMethods
+from .schema_utils import get_file
