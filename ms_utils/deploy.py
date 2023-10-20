@@ -1,4 +1,3 @@
-import errno
 import shutil
 
 import click
@@ -7,6 +6,9 @@ import os
 
 @click.command()
 def generate():
+    """
+    Command to copy the files necessary to deploy the app
+    """
     call_path = os.getcwd()
     devops_path = os.path.join(os.path.dirname(__file__), "devops")
     for file_name in os.listdir(devops_path):

@@ -1,6 +1,8 @@
 """
 View Utils
 """
+from datetime import datetime
+
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 
@@ -54,9 +56,9 @@ class ViewGeneralMethods:
     def get_filter(self, **kwargs):
         queryset = self.get_queryset()
         columns = inspect(self.model).column_attrs.keys()
-        for filter in kwargs.keys():
-            if filter in columns:
-                queryset = queryset.filter_by(**{filter: kwargs.get(filter)})
+        for f in kwargs.keys():
+            if f in columns:
+                queryset = queryset.filter_by(**{f: kwargs.get(f)})
         return queryset
 
     def get_item(self, pk):
@@ -97,7 +99,8 @@ class ViewGeneralMethods:
 
         return prepare_json_response(f'{self.model.__name__} get successfully', data=data)
 
-    def prepare_data_form(self):
+    @staticmethod
+    def prepare_data_form():
         if request.is_json:
             return request.json
         return dict(request.form)
@@ -110,9 +113,7 @@ class ViewGeneralMethods:
         :return: jsonify
         """
         data = self.prepare_data_form()
-        errors = validate_generic_form(validation_class, data)
-        if errors is not None:
-            return errors
+        validate_generic_form(validation_class, data)
         action_text = 'created'
         try:
             if object_id is None:
@@ -152,6 +153,9 @@ class ViewGeneralMethods:
                 if not hasattr(attribute, '__tablename__'):
                     # If the attribute is not a relationship
                     setattr(self.instance, key, value)
+
+        if hasattr(self.instance, 'updated_at') and 'updated_at' not in data.keys():
+            setattr(self.instance, 'updated_at', datetime.now())
 
     def details(self, object_id):
         """

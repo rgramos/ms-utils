@@ -1,9 +1,8 @@
 """
 Abstract Base Model
 """
-from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer
+from sqlalchemy import Column, DateTime, Integer, func
 
 
 class BaseModel:
@@ -11,5 +10,5 @@ class BaseModel:
     Datetime created_at and updated_at
     """
     id = Column(Integer, primary_key=True, autoincrement=True)
-    created_at = Column(DateTime, default=datetime.now())
-    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
+    created_at = Column(DateTime, default=func.CURRENT_TIMESTAMP())
+    updated_at = Column(DateTime, default=func.CURRENT_TIMESTAMP(), onupdate=func.CURRENT_TIMESTAMP())
