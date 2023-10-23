@@ -21,7 +21,9 @@ EXPOSE $EXPORT_PORT
 
 RUN ["chmod", "+x", "./script.sh"]
 
-RUN echo "/bin/bash /usr/app/script.sh $port" > /tmp.sh
+RUN sed 's/\r$//' ./script.sh > ./parse_script.sh
+
+RUN echo "/bin/bash /usr/app/parse_script.sh $port" > /tmp.sh
 
 RUN ["chmod", "+x", "/tmp.sh"]
 
