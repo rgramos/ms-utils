@@ -1,10 +1,12 @@
 """
 View Utils
 """
+from datetime import datetime
+
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 
-from ms_utils import prepare_json_response, PaginationSchema
+from ms_utils import prepare_json_response, PaginationSchema, abort_bad_request
 from flask import current_app, request
 from sqlalchemy import inspect
 
@@ -54,21 +56,22 @@ class ViewGeneralMethods:
     def get_filter(self, **kwargs):
         queryset = self.get_queryset()
         columns = inspect(self.model).column_attrs.keys()
-        for filter in kwargs.keys():
-            if filter in columns:
-                queryset = queryset.filter_by(**{filter: kwargs.get(filter)})
+        for f in kwargs.keys():
+            if f in columns:
+                queryset = queryset.filter_by(**{f: kwargs.get(f)})
         return queryset
 
     def get_item(self, pk):
         self.instance = self.get_queryset().get_or_404(pk)
         return self.instance
 
-    def get_list_without_pagination(self):
+    def get_list_without_pagination(self, **kwargs):
         """
         List items without pagination
         :return: json
         """
-        return generic_get_serialize_data(self.schema(many=True), self.get_queryset().all())
+        queryset = self.get_filter(**kwargs)
+        return generic_get_serialize_data(self.schema(many=True), queryset)
 
     def get_list_with_pagination(self, **kwargs):
         """
@@ -90,11 +93,17 @@ class ViewGeneralMethods:
         :return: jsonify
         """
         if request.args.get('not_paginate'):
-            data = self.get_list_without_pagination()
+            data = self.get_list_without_pagination(**{**kwargs, **request.args})
         else:
-            data = self.get_list_with_pagination(**kwargs)
+            data = self.get_list_with_pagination(**{**kwargs, **request.args})
 
         return prepare_json_response(f'{self.model.__name__} get successfully', data=data)
+
+    @staticmethod
+    def prepare_data_form():
+        if request.is_json:
+            return request.json
+        return dict(request.form)
 
     def update_or_create(self, validation_class, object_id=None):
         """
@@ -103,12 +112,10 @@ class ViewGeneralMethods:
         :param object_id:
         :return: jsonify
         """
-        errors = validate_generic_form(validation_class)
-        if errors is not None:
-            return errors
+        data = self.prepare_data_form()
+        validate_generic_form(validation_class, data)
         action_text = 'created'
         try:
-            data = request.json
             if object_id is None:
                 self.create(data)
             else:
@@ -118,8 +125,7 @@ class ViewGeneralMethods:
             self.get_db().session.commit()
         except ValueError:
             self.get_db().session.rollback()
-            return prepare_json_response(f'{self.model.__name__} can not be {action_text} successfully', False,
-                                         code=400)
+            abort_bad_request(f'{self.model.__name__} can not be {action_text} successfully')
         return prepare_json_response(f'{self.model.__name__} {action_text} successfully')
 
     def create(self, data):
@@ -146,6 +152,9 @@ class ViewGeneralMethods:
                 if not hasattr(attribute, '__tablename__'):
                     # If the attribute is not a relationship
                     setattr(self.instance, key, value)
+
+        if hasattr(self.instance, 'updated_at') and 'updated_at' not in data.keys():
+            setattr(self.instance, 'updated_at', datetime.now())
 
     def details(self, object_id):
         """

@@ -41,6 +41,7 @@ class GenericItemCrud(ApiView):
     """
     Generic Item View
     """
+
     def get(self, object_id):
         """
         Get element
@@ -64,6 +65,7 @@ class GenericGroupCrud(ApiView):
     """
     Generic Group View
     """
+
     def get(self):
         """
         List elements
@@ -83,8 +85,8 @@ class UrlsApi:
     """
     blueprint = None
     url_name = 'generic-api'
-    item_crud_class = GenericItemCrud
-    group_crud_class = GenericGroupCrud
+    item_crud_class = None
+    group_crud_class = None
 
     def __init__(self):
         self.register_api()
@@ -101,10 +103,12 @@ class UrlsApi:
         """
         Register url api
         """
-        item = self.item_crud_class.as_view(f"{self.url_name}-item")
-        self.add_url(f"/{self.url_name}/<int:object_id>", item)
-        group = self.group_crud_class.as_view(f"{self.url_name}-group")
-        self.add_url(f"/{self.url_name}/", group)
+        if self.item_crud_class:
+            item = self.item_crud_class.as_view(f"{self.url_name}-item")
+            self.add_url(f"/{self.url_name}/<int:object_id>", item)
+        if self.group_crud_class:
+            group = self.group_crud_class.as_view(f"{self.url_name}-group")
+            self.add_url(f"/{self.url_name}/", group)
 
     def add_url(self, url, view_func):
         """
