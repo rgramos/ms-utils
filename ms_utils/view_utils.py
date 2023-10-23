@@ -1,6 +1,7 @@
 """
 View Utils
 """
+import json
 from datetime import datetime
 
 from flask_marshmallow import Marshmallow
@@ -12,6 +13,16 @@ from sqlalchemy import inspect
 
 from .model_utils import generic_get_serialize_data
 from .validation_utils import validate_generic_form
+
+
+class DataDecoder(json.JSONDecoder):
+    def decode(self, obj):
+        boolean_text = ['true', 'false', 'True', 'False']
+        data = super().decode(obj)
+        for d in data.keys():
+            if data[d] in boolean_text:
+                data[d] = eval(data[d].capitalize())
+        return data
 
 
 class ViewGeneralMethods:
@@ -103,7 +114,7 @@ class ViewGeneralMethods:
     def prepare_data_form():
         if request.is_json:
             return request.json
-        return dict(request.form)
+        return json.loads(json.dumps(dict(request.form)), cls=DataDecoder)
 
     def update_or_create(self, validation_class, object_id=None):
         """
