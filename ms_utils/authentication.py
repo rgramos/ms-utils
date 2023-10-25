@@ -1,5 +1,3 @@
-import json
-
 from flask import g, current_app
 
 from ms_utils import abort_bad_request, abort_unauthorized, request_get, abort_forbidden
@@ -14,8 +12,7 @@ class NotAuthenticate(object):
         try:
             response = request_get(f'{current_app.config.get("AUTH_MS_API")}/auth/check-authentication')
             if response.status_code == 200:
-                response = json.loads(response.content)
-                user = response['data']
+                user = response.json()['data']
         except Exception:
             pass
         g.setdefault('user', user)
@@ -34,8 +31,7 @@ class IsAuthenticate(object):
         response = request_get(f'{current_app.config.get("AUTH_MS_API")}/auth/check-authentication')
         if not response.status_code == 200:
             abort_unauthorized()
-        response = json.loads(response.content)
-        g.setdefault('user', response['data'])
+        g.setdefault('user', response.json()['data'])
         return super(IsAuthenticate, self).dispatch_request(**kwargs)
 
 
@@ -64,8 +60,7 @@ class ApiPermission(object):
             })
             if not response.status_code == 200:
                 abort_unauthorized()
-            response = json.loads(response.content)
-            permissions = response['data']
+            permissions = response.json()['data']
             for permission in self.permission_required:
                 if not any(permission == p['permission'] for p in permissions):
                     abort_forbidden("You do not have permission for this request")
