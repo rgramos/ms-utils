@@ -15,7 +15,7 @@ def validate_generic_form(validation_class, body):
     """
     if body is None:
         raise TypeError('Cannot validate an object of type None')
-    errors = validation_class().validate(body)
+    errors = validation_class.validate(body)
     if errors:
         abort_validation('VALIDATION ERROR', **{'data': {'errors': errors}})
 

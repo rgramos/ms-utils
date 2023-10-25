@@ -12,8 +12,8 @@ def prepare_header(headers):
     app = ''
     if request:
         authorization = request.headers['Authorization'] if 'Authorization' in request.headers.keys() else ''
-        app = request.headers['app'] if 'app' in request.headers.keys() else ''
-    return {**{'Authorization': authorization, 'app': app}, **headers}
+        app = request.headers['App'] if 'App' in request.headers.keys() else ''
+    return {**{'Authorization': authorization, 'App': app}, **headers}
 
 
 def request_get(url, params=None, headers=None):

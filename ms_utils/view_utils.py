@@ -34,6 +34,7 @@ class ViewGeneralMethods:
     model = None
     schema = None
     instance = None
+    item_pk = 'object_id'
 
     def get_db(self):
         """
@@ -116,6 +117,16 @@ class ViewGeneralMethods:
             return request.json
         return json.loads(json.dumps(dict(request.form)), cls=DataDecoder)
 
+    def get_context(self, **kwargs):
+        context = {**kwargs}
+        if self.item_pk is not None and self.item_pk in request.view_args:
+            self.get_item(request.view_args.get(self.item_pk))
+            context['instance'] = self.instance
+        return context
+
+    def validate(self, validation_class, data):
+        validate_generic_form(validation_class(context=self.get_context()), data)
+
     def update_or_create(self, validation_class, object_id=None):
         """
         Generic method for create or update provider
@@ -124,14 +135,14 @@ class ViewGeneralMethods:
         :return: jsonify
         """
         data = self.prepare_data_form()
-        validate_generic_form(validation_class, data)
         action_text = 'created'
+        self.validate(validation_class, data)
+
         try:
             if object_id is None:
                 self.create(data)
             else:
                 action_text = 'updated'
-                self.get_item(object_id)
                 self.update(data)
             self.get_db().session.commit()
         except ValueError:
