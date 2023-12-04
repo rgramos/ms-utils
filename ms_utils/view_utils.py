@@ -8,11 +8,15 @@ from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 
 from ms_utils import prepare_json_response, PaginationSchema, abort_bad_request
-from flask import current_app, request
+from flask import current_app, request, g
 from sqlalchemy import inspect
 
 from .model_utils import generic_get_serialize_data
 from .validation_utils import validate_generic_form
+
+
+def has_column(model, column_name):
+    return column_name in [c.key for c in inspect(model).columns]
 
 
 class DataDecoder(json.JSONDecoder):
@@ -67,6 +71,11 @@ class ViewGeneralMethods:
 
     def get_filter(self, **kwargs):
         queryset = self.get_queryset()
+        if request.args.get('authenticated_user_only'):
+            if has_column(self.model, 'user_id'):
+                queryset = queryset.filter_by(user_id=g.user['id'])
+            else:
+                queryset = queryset.filter_by(employee_id=g.user['id'])
         columns = inspect(self.model).column_attrs.keys()
         for f in kwargs.keys():
             if f in columns:
