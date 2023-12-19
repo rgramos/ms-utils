@@ -5,12 +5,20 @@ ARG DIRECTORY_BASE
 ENV directory $DIRECTORY_BASE
 RUN apt update &&\
     apt install -y \
-    python3-dev default-libmysqlclient-dev build-essential libssl-dev libffi-dev python3-setuptools && \
+    ca-certificates openssl python3-dev default-libmysqlclient-dev build-essential libssl-dev libffi-dev python3-setuptools && \
     rm -rf /var/lib/apt/lists/*
+
+ADD http://cdn.vacolba.inet/cfssl/vacolba_ca.crt /usr/local/share/ca-certificates/vacolba_ca.crt
+
+RUN update-ca-certificates
+
+ENV REQUESTS_CA_BUNDLE /etc/ssl/certs/ca-certificates.crt
 
 WORKDIR /usr/app
 
 COPY $directory ./
+
+ADD http://cdn.vacolba.inet/cfssl/vacolba_ca.crt ./certs/
 
 COPY ./deploy/script.sh ./
 
