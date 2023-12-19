@@ -71,11 +71,12 @@ class ViewGeneralMethods:
 
     def get_filter(self, **kwargs):
         queryset = self.get_queryset()
-        if request.args.get('authenticated_user_only'):
+        user_data = g.get('user')
+        if request.args.get('authenticated_user_only') and user_data:
             if has_column(self.model, 'user_id'):
-                queryset = queryset.filter_by(user_id=g.user['id'])
+                queryset = queryset.filter_by(user_id=user_data['id'])
             else:
-                queryset = queryset.filter_by(employee_id=g.user['id'])
+                queryset = queryset.filter_by(employee_id=user_data['id'])
         columns = inspect(self.model).column_attrs.keys()
         for f in kwargs.keys():
             if f in columns:
