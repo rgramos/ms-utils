@@ -1,9 +1,12 @@
 services:
   ms-credentials:
     restart: always
+    image: docker.i/${PREFIX}-${ENV}:${TAG}
     build:
       context: .
       dockerfile: Dockerfile
+      tags:
+        - docker.i/${PREFIX}-${ENV}:${TAG}
       args:
         DIRECTORY_BASE: ${DIRECTORY_BASE:-./application}
         EXPORT_PORT: ${EXPORT_PORT:-5000}
