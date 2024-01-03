@@ -1,6 +1,6 @@
 from functools import wraps
 
-from flask import g, current_app
+from flask import g, current_app, request
 
 from ms_utils import abort_bad_request, abort_unauthorized, request_get, abort_forbidden
 
@@ -37,6 +37,73 @@ class IsAuthenticate(object):
             abort_unauthorized()
         g.setdefault('user', response.json()['data'])
         return super(IsAuthenticate, self).dispatch_request(**kwargs)
+
+
+class HasHierarchy(object):
+    """
+    Has Hierarchy Class
+
+    Class to verify users has a hierarchy, in that case modify a get_queryset method
+    """
+    config = current_app.config
+    hierarchy_field = config.get('HIERARCHY_PAYLOAD_FIELD')
+
+    def handle_validations(self):
+        if not self.hierarchy_field:
+            abort_bad_request('The hierarchy field (HIERARCHY_PAYLOAD_FIELD) is not configured')
+
+        if not self.config.get('AUTH_MS_API'):
+            abort_bad_request('The authentication API (AUTH_MS_API) is not configured')
+
+    def get_hierarchy_users_list(self):
+        """
+        Return a list of users in my hierarchy
+        :return:
+        """
+        try:
+            response = request_get(f'{self.config.get("AUTH_MS_API")}/rol/hierarchy', params={
+                'not_paginate': True
+            })
+            if not response.status_code == 200:
+                abort_unauthorized()
+            return response.json()['data']
+        except Exception as e:
+            abort_forbidden('Error al buscar el rol/hierarchy')
+
+    def get_queryset(self):
+        queryset = super(HasHierarchy, self).get_queryset()
+        # Una vez obetnido el queryset aplicar el filtro de la herencia sobre el queryset obtenido y retornar
+        hierarchy_users_list = self.get_hierarchy_users_list()
+        if request.args.get(self.hierarchy_field) and request.args.get(self.hierarchy_field) in hierarchy_users_list:
+            return queryset.filter_by(**{self.hierarchy_field: request.args.get(self.hierarchy_field)})
+        # Aplicar el filtro cuando el id configurado(hierarchy_field) ente la lista
+        condition = getattr(self.model, self.hierarchy_field).in_(hierarchy_users_list)
+        queryset = queryset.filter_by(condition)
+        return queryset
+
+    def dispatch_request(self, **kwargs):
+        # Valida que tenga configurada la variable HIERARCHY_PAYLOAD_FIELD y AUTH_MS_API
+        self.handle_validations()
+
+        # si hierarchy_field esta en los argumentos de la peticion o el "id" viene en la url entra
+        if self.hierarchy_field in request.args or 'id' not in request.view_args:
+            # Obtengo la lista de jerarqui por usuario (No vi que hubiera que pasarle ningun parametro)
+            hierarchy_users_list = self.get_hierarchy_users_list()
+            # Si el valor del hierarchy_field (el id que quiero buscar) esta en la lista de jerarquias de usuario o
+            # el "id" viene en la url esta en la lista de jerarquias de usuario y no es el del usuario logado
+            if (request.args.get(self.hierarchy_field) in hierarchy_users_list or
+                    (request.view_args.get('id') in hierarchy_users_list
+                     and request.view_args.get('id') != g.get('user')['id'])):
+                # Devolver queryset para el id del campo hierarchy_field
+                # Si llega aqui solo llama al super porque supuestamente al hacer super llamaria al get_queryset que seria el
+                # que tendria q aplicar la jerarquia cuando le toque
+                return super(HasHierarchy, self).dispatch_request(**kwargs)
+            else:
+                abort_forbidden("You do not have permission for this request")
+
+        # Si llega aqui solo llama al super porque supuestamente al hacer super llamaria al get_queryset que seria el
+        # que tendria q aplicar la jerarquia cuando le toque
+        return super(HasHierarchy, self).dispatch_request(**kwargs)
 
 
 def validate_permission(permission_required=None, permission_type="api"):
