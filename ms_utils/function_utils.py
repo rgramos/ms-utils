@@ -9,7 +9,7 @@ def get_hierarchy_users_list():
     :return:
     """
     try:
-        response = request_get(f'{current_app.config.config.get("AUTH_MS_API")}/rol/hierarchy', params={
+        response = request_get(f'{current_app.config.get("AUTH_MS_API")}/rol/hierarchy', params={
             'not_paginate': True
         })
         if not response.status_code == 200:
