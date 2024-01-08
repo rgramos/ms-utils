@@ -9,9 +9,10 @@ def get_hierarchy_users_list():
     :return:
     """
     try:
-        response = request_get(f'{current_app.config.get("AUTH_MS_API")}/rol/hierarchy', params={
-            'not_paginate': True
-        })
+        response = request_get(
+            f'{current_app.config.get("AUTH_MS_API")}{current_app.config.get("HIERARCHY_PAYLOAD_API")}', params={
+                'not_paginate': True
+            })
         if not response.status_code == 200:
             abort_unauthorized()
         return response.json()['data']

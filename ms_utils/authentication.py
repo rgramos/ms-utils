@@ -48,11 +48,15 @@ class HasHierarchy(object):
     """
     config = current_app.config
     hierarchy_field = config.get('HIERARCHY_PAYLOAD_FIELD')
+    hierarchy_api = config.get('HIERARCHY_PAYLOAD_API')
     hierarchy_users_list = []
 
     def handle_validations(self):
         if not self.hierarchy_field:
             abort_bad_request('The hierarchy field (HIERARCHY_PAYLOAD_FIELD) is not configured')
+
+        if not self.hierarchy_api:
+            abort_bad_request('The hierarchy api (HIERARCHY_PAYLOAD_API) is not configured')
 
         if not self.config.get('AUTH_MS_API'):
             abort_bad_request('The authentication API (AUTH_MS_API) is not configured')
