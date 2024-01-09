@@ -10,12 +10,10 @@ def get_hierarchy_users_list():
     """
     try:
         response = request_get(
-            f'{current_app.config.get("AUTH_MS_API")}{current_app.config.get("HIERARCHY_PAYLOAD_API")}', params={
-                'not_paginate': True
-            })
+            f'{current_app.config.get("AUTH_MS_API")}{current_app.config.get("HIERARCHY_PAYLOAD_API")}')
         if not response.status_code == 200:
             abort_unauthorized()
-        return response.json()['data']
+        return response.json()['data'].get('users')
     except Exception as e:
         abort_forbidden('Error al buscar el rol/hierarchy')
 

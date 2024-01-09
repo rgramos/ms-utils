@@ -46,10 +46,16 @@ class HasHierarchy(object):
 
     Class to verify users has a hierarchy, in that case modify a get_queryset method
     """
-    config = current_app.config
-    hierarchy_field = config.get('HIERARCHY_PAYLOAD_FIELD')
-    hierarchy_api = config.get('HIERARCHY_PAYLOAD_API')
+    config = None
+    hierarchy_field = None
+    hierarchy_api = None
     hierarchy_users_list = []
+
+    def handle_init_vars(self):
+        # Init vars
+        self.config = current_app.config
+        self.hierarchy_field = self.config.get('HIERARCHY_PAYLOAD_FIELD')
+        self.hierarchy_api = self.config.get('HIERARCHY_PAYLOAD_API')
 
     def handle_validations(self):
         if not self.hierarchy_field:
@@ -67,15 +73,17 @@ class HasHierarchy(object):
         if payload_value and payload_value in self.hierarchy_users_list:
             return queryset.filter_by(**{self.hierarchy_field: payload_value})
         condition = getattr(self.model, self.hierarchy_field).in_(self.hierarchy_users_list)
-        queryset = queryset.filter_by(condition)
+        queryset = queryset.filter(condition)
         return queryset
 
     def dispatch_request(self, **kwargs):
+        self.handle_init_vars()
+
         self.handle_validations()
 
         self.hierarchy_users_list = get_hierarchy_users_list()
 
-        if self.hierarchy_field in request.args or 'id' not in request.view_args:
+        if self.hierarchy_field in request.args or 'id' in request.view_args:
             payload_value = request.args.get(self.hierarchy_field)
             arg_value = request.view_args.get('id')
             if (payload_value in self.hierarchy_users_list or
