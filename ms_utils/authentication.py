@@ -72,7 +72,7 @@ class HasHierarchy(object):
         payload_value = request.args.get(self.hierarchy_field)
         if payload_value and payload_value in self.hierarchy_users_list:
             return queryset.filter_by(**{self.hierarchy_field: payload_value})
-        self.hierarchy_users_list.push(g.get('user')['id'])
+        self.hierarchy_users_list.append(g.get('user')['id'])
         condition = getattr(self.model, self.hierarchy_field).in_(self.hierarchy_users_list)
         queryset = queryset.filter(condition)
         return queryset
