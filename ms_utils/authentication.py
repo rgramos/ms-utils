@@ -85,10 +85,10 @@ class HasHierarchy(object):
         self.hierarchy_users_list = get_hierarchy_users_list()
 
         if self.hierarchy_field in request.args or 'id' in request.view_args:
-            payload_value = request.args.get(self.hierarchy_field)
+            payload_value = int(request.args.get(self.hierarchy_field))
             arg_value = request.view_args.get('id')
-            if (payload_value in self.hierarchy_users_list or
-                    arg_value in self.hierarchy_users_list or arg_value == g.get('user')['id']):
+            if (payload_value in self.hierarchy_users_list or payload_value == g.get('user')['id']
+                    or arg_value in self.hierarchy_users_list or arg_value == g.get('user')['id']):
                 return super(HasHierarchy, self).dispatch_request(**kwargs)
             abort_forbidden("You do not have permission for this request")
 
