@@ -80,7 +80,7 @@ class ViewGeneralMethods:
         columns = inspect(self.model).column_attrs.keys()
         for f in kwargs.keys():
             if f in columns:
-                queryset = queryset.filter_by(**{f: kwargs.get(f)})
+                queryset = queryset.filter_by(**json.loads(json.dumps({f: kwargs.get(f)}), cls=DataDecoder))
         return queryset
 
     def get_item(self, pk):
