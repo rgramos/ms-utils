@@ -10,6 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from ms_utils import prepare_json_response, PaginationSchema, abort_bad_request
 from flask import current_app, request, g
 from sqlalchemy import inspect
+from sqlalchemy import or_
 
 from .model_utils import generic_get_serialize_data
 from .validation_utils import validate_generic_form
@@ -39,6 +40,8 @@ class ViewGeneralMethods:
     schema = None
     instance = None
     item_pk = 'object_id'
+    columns_filter_icontains = []
+    key_kwarg_filter_icointains = 'q'
 
     def get_db(self):
         """
@@ -69,6 +72,14 @@ class ViewGeneralMethods:
             raise ValueError("'Model' is not defined.")
         return self.model.query
 
+    def get_filter_icontains(self, queryset, **kwargs):
+        if self.key_kwarg_filter_icointains in kwargs.keys() and len(self.columns_filter_icontains) > 0:
+            conditions = []
+            for column in self.columns_filter_icontains:
+                conditions.append(getattr(self.model, column).ilike(f"%{kwargs['q']}%"))
+            queryset = queryset.filter(or_(*conditions))
+        return queryset
+
     def get_filter(self, **kwargs):
         queryset = self.get_queryset()
         user_data = g.get('user')
@@ -81,6 +92,7 @@ class ViewGeneralMethods:
         for f in kwargs.keys():
             if f in columns:
                 queryset = queryset.filter_by(**json.loads(json.dumps({f: kwargs.get(f)}), cls=DataDecoder))
+        queryset = self.get_filter_icontains(queryset, **kwargs)
         return queryset
 
     def get_item(self, pk):
