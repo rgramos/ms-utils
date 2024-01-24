@@ -7,7 +7,7 @@ from datetime import datetime
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 
-from ms_utils import prepare_json_response, PaginationSchema, abort_bad_request
+from ms_utils import prepare_json_response, PaginationSchema, abort_bad_request, abort_not_found
 from flask import current_app, request, g
 from sqlalchemy import inspect
 from sqlalchemy import or_
@@ -96,7 +96,9 @@ class ViewGeneralMethods:
         return queryset
 
     def get_item(self, pk):
-        self.instance = self.get_queryset().get_or_404(pk)
+        self.instance = self.get_queryset().filter_by(id=pk).first()
+        if not self.instance:
+            return abort_not_found()
         return self.instance
 
     def get_list_without_pagination(self, **kwargs):
