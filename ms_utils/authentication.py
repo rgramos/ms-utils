@@ -29,6 +29,11 @@ class IsAuthenticate(object):
     """
 
     def dispatch_request(self, **kwargs):
+        self.validate_authentication()
+        return super(IsAuthenticate, self).dispatch_request(**kwargs)
+
+    @staticmethod
+    def validate_authentication():
         config = current_app.config
         if not config.get('AUTH_MS_API'):
             abort_bad_request('The authentication API (AUTH_MS_API) is not configured')
@@ -37,7 +42,6 @@ class IsAuthenticate(object):
         if not response.status_code == 200:
             abort_unauthorized()
         g.setdefault('user', response.json()['data'])
-        return super(IsAuthenticate, self).dispatch_request(**kwargs)
 
 
 class HasHierarchy(object):
@@ -149,10 +153,18 @@ def view_decorator(func):
 
 def permission_decorator(permissions):
     def check_perms():
+        perms = permissions
         if isinstance(permissions, str):
             perms = (permissions,)
-        else:
-            perms = permissions
-        return validate_permission(permissions)
+        return validate_permission(perms)
 
     return view_decorator(check_perms)
+
+
+def authentication_decorator():
+    def check_authentication():
+        auth = IsAuthenticate()
+        auth.validate_authentication()
+        return True
+
+    return view_decorator(check_authentication)
