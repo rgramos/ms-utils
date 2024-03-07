@@ -110,7 +110,8 @@ def validate_permission(permission_required=None, permission_type="api"):
         abort_bad_request('The app name (APP_NAME) is not configured')
     if not (isinstance(permission_required, tuple)
             or isinstance(permission_required, list)
-            or isinstance(permission_required, set)):
+            or isinstance(permission_required, set)
+            or isinstance(permission_required, dict)):
         abort_bad_request('The permission_required variable must be iterable')
     response = request_get(f'{current_app.config.get("AUTH_MS_API")}/user-rol-permission/me', params={
         'not_paginate': True,
@@ -120,9 +121,9 @@ def validate_permission(permission_required=None, permission_type="api"):
     if not response.status_code == 200:
         abort_unauthorized()
     permissions = response.json()['data']
-    for permission in permission_required:
-        if not any(permission == p['permission'] for p in permissions):
-            abort_forbidden("You do not have permission for this request")
+    permission = permission_required.get(request.method)
+    if not any(permission == p['permission'] for p in permissions):
+        abort_forbidden("You do not have permission for this request")
     return True
 
 
