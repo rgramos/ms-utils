@@ -121,6 +121,21 @@ def validate_permission(permission_required=None, permission_type="api"):
     if not response.status_code == 200:
         abort_unauthorized()
     permissions = response.json()['data']
+    if isinstance(permission_required, tuple):
+        return validate_tuple(permission_required, permissions)
+
+    if isinstance(permission_required, dict):
+        return validate_dict(permission_required, permissions)
+
+
+def validate_tuple(permission_required, permissions):
+    for permission in permission_required:
+        if not any(permission == p['permission'] for p in permissions):
+            abort_forbidden("You do not have permission for this request")
+    return True
+
+
+def validate_dict(permission_required, permissions):
     permission = permission_required.get(request.method)
     if not any(permission == p['permission'] for p in permissions):
         abort_forbidden("You do not have permission for this request")
