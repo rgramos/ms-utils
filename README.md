@@ -7,7 +7,6 @@ Upload Package
 
 > `python -m twine upload --repository pypi dist/*`
 
-
 ## View utils keys
 
 - ### Generic list:

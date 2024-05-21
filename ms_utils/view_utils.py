@@ -172,6 +172,8 @@ class ViewGeneralMethods:
         except ValueError:
             self.get_db().session.rollback()
             abort_bad_request(f'{self.model.__name__} can not be {action_text} successfully')
+        finally:
+            self.get_db().session.close()
         return prepare_json_response(f'{self.model.__name__} {action_text} successfully')
 
     def create(self, data):
