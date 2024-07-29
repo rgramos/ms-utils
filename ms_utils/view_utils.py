@@ -197,7 +197,7 @@ class ViewGeneralMethods:
         for key, value in data.items():
             if hasattr(self.instance, key):
                 attribute = getattr(self.instance, key)
-                if not hasattr(attribute, '__tablename__'):
+                if not hasattr(attribute, '__tablename__') and type(attribute) == type(value):
                     # If the attribute is not a relationship
                     setattr(self.instance, key, value)
 
